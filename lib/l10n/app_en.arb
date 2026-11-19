@@ -1,0 +1,10 @@
+{
+  "appTitle": "Al-Tayer",
+  "welcomeBack": "Welcome Back",
+  "login": "Login",
+  "phoneNumber": "Phone Number",
+  "sendOtp": "Send Verification Code",
+  "verifyOtp": "Verify Code",
+  "orderErrand": "Order Errand",
+  "driverDashboard": "Driver Dashboard"
+}
