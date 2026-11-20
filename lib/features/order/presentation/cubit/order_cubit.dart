@@ -1,8 +1,10 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:equatable/equatable.dart';
+import '../../../../core/services/secure_storage_service.dart';
 import '../../../../core/services/socket_service.dart';
 import '../../../../core/utils/pricing_calculator.dart';
 import '../../domain/models/order_model.dart';
+import '../../domain/repositories/order_repository.dart';
 
 // States
 abstract class OrderState extends Equatable {
@@ -63,8 +65,14 @@ class OrderFailure extends OrderState {
 // Cubit
 class OrderCubit extends Cubit<OrderState> {
   final SocketService socketService;
+  final OrderRepository orderRepository;
+  final SecureStorageService secureStorage;
 
-  OrderCubit({required this.socketService}) : super(OrderInitial());
+  OrderCubit({
+    required this.socketService,
+    required this.orderRepository,
+    required this.secureStorage,
+  }) : super(OrderInitial());
 
   void createErrandOrder({
     required String itemsDescription,
@@ -74,21 +82,25 @@ class OrderCubit extends Cubit<OrderState> {
     String? pickupAddress,
     double estimatedCost = 0.0,
     double tip = 0.0,
-    double simulatedDistanceKm = 2.5, // مسافة تقديرية بين المكانين
+    double simulatedDistanceKm = 2.5,
   }) async {
     emit(OrderLoading());
     try {
-      // حساب التسعيرة الديناميكية الفعلية
+      final userData = await secureStorage.getUserData();
+      final customerId = userData['userId'] ?? 'CUST-TEMP';
+      final customerName = userData['userName'] ?? 'عميل ع الطاير';
+      final customerPhone = userData['phone'] ?? '';
+
       final pricing = PricingCalculator.calculateFee(
         distanceKm: simulatedDistanceKm,
         tip: tip,
       );
 
-      final newOrder = OrderModel(
+      final initialOrder = OrderModel(
         id: 'ORD-${DateTime.now().millisecondsSinceEpoch.toString().substring(7)}',
-        customerId: 'CUST-101',
-        customerName: 'محمد علاء',
-        customerPhone: '01012345678',
+        customerId: customerId,
+        customerName: customerName,
+        customerPhone: customerPhone,
         type: OrderType.errand,
         status: OrderStatus.pending,
         itemsDescription: itemsDescription,
@@ -109,11 +121,18 @@ class OrderCubit extends Cubit<OrderState> {
         createdAt: DateTime.now(),
       );
 
-      // Join Order Room in Socket
-      socketService.joinOrderRoom(newOrder.id);
+      // إنشاء الطلب عبر السيرفر الحقيقي
+      final result = await orderRepository.createOrder(initialOrder);
 
-      emit(OrderCreatedSuccess(newOrder));
-      startTracking(newOrder);
+      result.fold(
+        (error) => emit(OrderFailure('فشل في إرسال الطلب: $error')),
+        (createdOrder) {
+          // الانضمام لغرفة الطلب في السوكيت لمتابعة المندوب
+          socketService.joinOrderRoom(createdOrder.id);
+          emit(OrderCreatedSuccess(createdOrder));
+          startTracking(createdOrder);
+        },
+      );
     } catch (e) {
       emit(OrderFailure('فشل في إرسال الطلب: $e'));
     }
@@ -122,7 +141,7 @@ class OrderCubit extends Cubit<OrderState> {
   void startTracking(OrderModel order) {
     emit(OrderTrackingState(order: order));
 
-    // Listen to real-time driver coordinates via WebSocket
+    // الاستماع لموقع المندوب المباشر
     socketService.onLocationUpdate((lat, lng, bearing) {
       if (state is OrderTrackingState) {
         final current = state as OrderTrackingState;
@@ -134,12 +153,12 @@ class OrderCubit extends Cubit<OrderState> {
       }
     });
 
-    // Listen to Order Status Changes (including receipt updates from driver)
+    // الاستماع لتغييرات حالة الطلب والفاتورة الفعلية
     socketService.onOrderStatusChange((newStatus, extra) {
       if (state is OrderTrackingState) {
         final current = state as OrderTrackingState;
         final updatedStatus = OrderStatus.values.firstWhere(
-          (e) => e.name == newStatus,
+          (e) => e.name.toLowerCase() == newStatus.toLowerCase(),
           orElse: () => current.order.status,
         );
 

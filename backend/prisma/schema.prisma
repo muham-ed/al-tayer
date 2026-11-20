@@ -1,0 +1,102 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─── Users ────────────────────────────────────────────────────────────────────
+model User {
+  id        String   @id @default(uuid())
+  phone     String   @unique
+  name      String?
+  role      Role     @default(CUSTOMER)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  driverProfile    DriverProfile?
+  ordersAsCustomer Order[]        @relation("CustomerOrders")
+}
+
+enum Role {
+  CUSTOMER
+  DRIVER
+  ADMIN
+}
+
+// ─── Driver Profile ───────────────────────────────────────────────────────────
+model DriverProfile {
+  id            String  @id @default(uuid())
+  userId        String  @unique
+  user          User    @relation(fields: [userId], references: [id])
+  vehicleModel  String?
+  licenseNumber String?
+  isOnline      Boolean @default(false)
+  rating        Float   @default(5.0)
+  totalRatings  Int     @default(0)
+
+  // نظام الكاش والعمولة
+  walletBalance Float @default(0.0)  // موجب = دين عليه، سالب = له فلوس
+  maxDebtLimit  Float @default(200.0)
+
+  // موقع السائق الحالي (lat,lng كـ JSON string)
+  currentLocation String?
+
+  orders Order[] @relation("DriverOrders")
+}
+
+// ─── Orders ───────────────────────────────────────────────────────────────────
+model Order {
+  id         String @id @default(uuid())
+  customerId String
+  customer   User   @relation("CustomerOrders", fields: [customerId], references: [id])
+
+  driverId String?
+  driver   DriverProfile? @relation("DriverOrders", fields: [driverId], references: [id])
+
+  // Locations مخزنة كـ JSON string
+  pickupLocation  String? // {"latitude":..., "longitude":..., "address":...}
+  dropoffLocation String  // {"latitude":..., "longitude":..., "address":..., "landmark":..., "buildingDetails":...}
+
+  // تفاصيل الطلب
+  itemsDescription String? // وصف المشتريات
+  price            Float   // رسوم التوصيل
+  estimatedCost    Float   @default(0) // تقدير قيمة المشتريات (من العميل)
+  actualReceiptCost Float  @default(0) // الفاتورة الفعلية (من المندوب)
+  receiptNote      String? // ملاحظة المندوب على الفاتورة
+  tip              Float   @default(0) // إكرامية
+
+  status    OrderStatus @default(PENDING)
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+}
+
+enum OrderStatus {
+  PENDING
+  ACCEPTED
+  AT_STORE    // المندوب في المحل
+  IN_TRANSIT  // في الطريق للعميل
+  DELIVERED
+  CANCELLED
+}
+
+// ─── Ledger (Double-Entry) ────────────────────────────────────────────────────
+model LedgerTransaction {
+  id          String          @id @default(uuid())
+  driverId    String
+  amount      Float
+  type        TransactionType
+  description String?
+  orderId     String?
+  createdAt   DateTime        @default(now())
+}
+
+enum TransactionType {
+  COD_COLLECTED // السائق جمع كاش من العميل (فاتورة + توصيل)
+  COMMISSION    // عمولة الشركة (خصم)
+  TOPUP         // دفع المندوب لصاحب الشركة (يخصم من دينه)
+  SETTLEMENT    // تسوية مالية نهائية
+  BONUS         // مكافأة على الأداء
+}

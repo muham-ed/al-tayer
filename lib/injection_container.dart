@@ -12,12 +12,14 @@ import 'features/order/presentation/cubit/order_cubit.dart';
 final sl = GetIt.instance;
 
 Future<void> initDependencies() async {
-  // Services & Network
-  sl.registerLazySingleton<DioClient>(() => DioClient());
+  // Services & Storage
+  final secureStorage = SecureStorageService();
+  sl.registerLazySingleton<SecureStorageService>(() => secureStorage);
   sl.registerLazySingleton<LocationService>(() => LocationService());
-  sl.registerLazySingleton<SecureStorageService>(() => SecureStorageService());
 
-  final socketService = SocketService();
+  sl.registerLazySingleton<DioClient>(() => DioClient(secureStorage: sl()));
+
+  final socketService = SocketService(secureStorage: sl());
   await socketService.init();
   sl.registerLazySingleton<SocketService>(() => socketService);
 
@@ -32,9 +34,15 @@ Future<void> initDependencies() async {
 
   // Cubits / Blocs
   sl.registerLazySingleton<AuthCubit>(() => AuthCubit(authRepository: sl()));
-  sl.registerFactory<OrderCubit>(() => OrderCubit(socketService: sl()));
+  sl.registerFactory<OrderCubit>(() => OrderCubit(
+        socketService: sl(),
+        orderRepository: sl(),
+        secureStorage: sl(),
+      ));
   sl.registerFactory<DriverCubit>(() => DriverCubit(
         socketService: sl(),
         locationService: sl(),
+        orderRepository: sl(),
+        secureStorage: sl(),
       ));
 }

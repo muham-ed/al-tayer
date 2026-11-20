@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+  <title>ع الطاير - اطلب مشوارك</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.rtl.min.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background-color: #f8fafc; padding-bottom: 40px; }
+    .hero-header { background: linear-gradient(135deg, #ff5722, #e64a19); color: white; padding: 24px 20px; border-radius: 0 0 24px 24px; text-align: center; box-shadow: 0 4px 15px rgba(230,74,25,0.25); }
+    .form-card { background: white; border-radius: 18px; border: 1px solid #e2e8f0; padding: 22px; margin-top: -15px; box-shadow: 0 4px 20px rgba(0,0,0,0.06); }
+    .btn-submit { background-color: #ff5722; color: white; font-weight: bold; border-radius: 12px; padding: 14px; width: 100%; border: none; font-size: 1.1rem; }
+    .btn-submit:hover { background-color: #e64a19; color: white; }
+  </style>
+</head>
+<body>
+
+  <div class="hero-header">
+    <h3 class="fw-bold mb-1">ع الطاير ⚡</h3>
+    <p class="small mb-0 opacity-90">أي طلب في أي حتة في البيطاش والعجمي يوصلك في ثواني</p>
+  </div>
+
+  <div class="container px-3">
+    <div class="form-card">
+      <form id="customerOrderForm">
+        <div class="mb-3">
+          <label class="form-label fw-bold small text-muted">اسمك الكريم *</label>
+          <input type="text" id="custName" class="form-control" placeholder="اكتب اسمك" required>
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label fw-bold small text-muted">رقم تليفونك للتواصل *</label>
+          <input type="tel" id="custPhone" class="form-control" placeholder="010XXXXXXXX" required>
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label fw-bold small text-muted">تفاصيل المشوار أو الطلبات بدقة *</label>
+          <textarea id="orderDesc" class="form-control" rows="3" placeholder="مثال: علبة دواء كذا من صيدلية خليل + عيش فينو من الفرن" required></textarea>
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label fw-bold small text-muted">عنوان التوصيل وعلامة مميزة *</label>
+          <input type="text" id="dropoffAddr" class="form-control" placeholder="شارع الحنفية - أمام مسجد كذا" required>
+        </div>
+
+        <div class="alert alert-light border small text-muted mb-4">
+          <i class="fa-solid fa-circle-info text-primary me-1"></i>
+          تكلفة التوصيل الثابتة داخل المنطقة: <strong>20 ج.م كاش</strong> عند الاستلام.
+        </div>
+
+        <button type="submit" class="btn btn-submit">
+          <i class="fa-solid fa-paper-plane me-1"></i> تأكيد الطلب وإرسال أقرب طيار
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script>
+    const socket = io();
+
+    document.getElementById('customerOrderForm').addEventListener('submit', (e) => {
+      e.preventDefault();
+
+      const orderData = {
+        id: 'ORD-' + Math.floor(1000 + Math.random() * 9000),
+        customerName: document.getElementById('custName').value,
+        customerPhone: document.getElementById('custPhone').value,
+        pickupLocation: { address: 'حسب وصف الطلب' },
+        dropoffLocation: { address: document.getElementById('dropoffAddr').value, landmark: 'علامة مميزة' },
+        itemsDescription: document.getElementById('orderDesc').value,
+        deliveryFee: 20,
+        estimatedCost: 0,
+      };
+
+      socket.emit('broadcast_new_order', orderData);
+
+      alert('تم إرسال طلبك بنجاح! طيار ع الطاير هيتصل بيك حالاً.');
+      e.target.reset();
+    });
+  </script>
+</body>
+</html>

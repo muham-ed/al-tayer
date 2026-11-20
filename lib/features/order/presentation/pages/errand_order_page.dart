@@ -4,6 +4,8 @@ import '../../../../core/constants/app_colors.dart';
 import '../../../../core/utils/pricing_calculator.dart';
 import '../../../../core/widgets/custom_button.dart';
 import '../../../../core/widgets/custom_text_field.dart';
+import '../../../../core/services/location_service.dart';
+import '../../../../injection_container.dart';
 import '../cubit/order_cubit.dart';
 import 'order_tracking_page.dart';
 
@@ -24,6 +26,37 @@ class _ErrandOrderPageState extends State<ErrandOrderPage> {
 
   double _estimatedDistanceKm = 2.5;
   double _tipAmount = 0.0;
+  bool _isLocating = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchCurrentLocationForDropoff();
+  }
+
+  Future<void> _fetchCurrentLocationForDropoff() async {
+    setState(() => _isLocating = true);
+    try {
+      final pos = await sl<LocationService>().getCurrentPosition();
+      if (pos != null && mounted) {
+        // إذا توفر الموقع، نحسب المسافة الحقيقية بين موقع المستخدم الحالي وأقرب سنتر تجاري في البيطاش
+        // نقطة مركز البيطاش: (31.1180, 29.7820)
+        final realDistance = PricingCalculator.calculateDistanceKm(
+          startLat: 31.1180,
+          startLng: 29.7820,
+          endLat: pos.latitude,
+          endLng: pos.longitude,
+        );
+        setState(() {
+          _estimatedDistanceKm = realDistance < 1.0 ? 1.5 : realDistance;
+        });
+      }
+    } catch (_) {
+      // الاستمرار بالقيمة الافتراضية بأمان
+    } finally {
+      if (mounted) setState(() => _isLocating = false);
+    }
+  }
 
   @override
   void dispose() {
@@ -129,7 +162,7 @@ class _ErrandOrderPageState extends State<ErrandOrderPage> {
                   controller: _dropoffController,
                   labelText: 'مكان التوصيل (الشارع والمنطقة) *',
                   hintText: 'البيطاش - شارع الحنفية',
-                  prefixIcon: Icons.location_on_rounded,
+                  prefixIcon: _isLocating ? Icons.my_location : Icons.location_on_rounded,
                 ),
                 const SizedBox(height: 14),
 

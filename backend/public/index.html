@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>لوحة إدارة ع الطاير - نقطة تحكم الدكان (Hub)</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.rtl.min.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f8fafc; color: #1e293b; }
+    .navbar { background: linear-gradient(135deg, #ff5722, #e64a19); box-shadow: 0 4px 12px rgba(230,74,25,0.2); }
+    .card { border-radius: 14px; border: 1px solid #e2e8f0; box-shadow: 0 2px 8px rgba(0,0,0,0.04); margin-bottom: 20px; }
+    .stat-card { border-right: 5px solid #ff5722; }
+    .stat-card.green { border-right-color: #10b981; }
+    .stat-card.blue { border-right-color: #3b82f6; }
+    .badge-status { font-size: 0.85rem; padding: 6px 12px; border-radius: 8px; }
+    .btn-primary-alt { background-color: #ff5722; border-color: #ff5722; color: #fff; }
+    .btn-primary-alt:hover { background-color: #e64a19; color: #fff; }
+  </style>
+</head>
+<body>
+
+  <!-- شريط التنقل -->
+  <nav class="navbar navbar-dark py-3">
+    <div class="container-fluid px-4">
+      <span class="navbar-brand mb-0 h1 fw-bold fs-4">
+        <i class="fa-solid fa-bolt me-2"></i> منصة ع الطاير - لوحة إدارة الدكان (Dispatcher Hub)
+      </span>
+      <div class="text-white">
+        <span class="badge bg-light text-dark px-3 py-2"><i class="fa-solid fa-shop me-1 text-danger"></i> مقر العمليات: نشط</span>
+      </div>
+    </div>
+  </nav>
+
+  <div class="container-fluid px-4 py-4">
+    <!-- كروت الإحصائيات السريعة -->
+    <div class="row g-3 mb-4">
+      <div class="col-md-3">
+        <div class="card p-3 stat-card">
+          <div class="text-muted small">إجمالي طلبات اليوم</div>
+          <h3 class="fw-bold mb-0" id="totalOrdersCount">0</h3>
+        </div>
+      </div>
+      <div class="col-md-3">
+        <div class="card p-3 stat-card green">
+          <div class="text-muted small">المناديب النشطين الآن</div>
+          <h3 class="fw-bold mb-0 text-success" id="activeDriversCount">0</h3>
+        </div>
+      </div>
+      <div class="col-md-3">
+        <div class="card p-3 stat-card blue">
+          <div class="text-muted small">عمولة الشركة المجمّعة</div>
+          <h3 class="fw-bold mb-0 text-primary" id="companyRevenue">0 ج.م</h3>
+        </div>
+      </div>
+      <div class="col-md-3">
+        <div class="card p-3 stat-card">
+          <div class="text-muted small">ديون كاش بانتظار التحصيل</div>
+          <h3 class="fw-bold mb-0 text-danger" id="pendingDebts">0 ج.م</h3>
+        </div>
+      </div>
+    </div>
+
+    <div class="row">
+      <!-- إنشاء طلب فوري من داخل الدكان (مثلاً عميل اتصل بالهاتف أو زبون دخل المحل) -->
+      <div class="col-lg-4">
+        <div class="card p-4">
+          <h5 class="fw-bold mb-3"><i class="fa-solid fa-plus-circle text-danger me-2"></i> إرسال طلب جديد فوري للطيارين</h5>
+          <form id="newOrderForm">
+            <div class="mb-3">
+              <label class="form-label small fw-bold">اسم العميل / المحل</label>
+              <input type="text" id="custName" class="form-control" placeholder="مثال: د. حسام - صيدلية الشفاء" required>
+            </div>
+            <div class="mb-3">
+              <label class="form-label small fw-bold">رقم تليفون العميل</label>
+              <input type="tel" id="custPhone" class="form-control" placeholder="010XXXXXXXX" required>
+            </div>
+            <div class="mb-3">
+              <label class="form-label small fw-bold">مكان الاستلام (المحل)</label>
+              <input type="text" id="pickupAddr" class="form-control" placeholder="مثال: مطعم كذا شارع الحنفية">
+            </div>
+            <div class="mb-3">
+              <label class="form-label small fw-bold">عنوان التسليم + علامة مميزة</label>
+              <input type="text" id="dropoffAddr" class="form-control" placeholder="شارع عين شمس أمام كافيه..." required>
+            </div>
+            <div class="mb-3">
+              <label class="form-label small fw-bold">وصف الطلب</label>
+              <textarea id="orderDesc" class="form-control" rows="2" placeholder="مثال: كيس علاج + شاش" required></textarea>
+            </div>
+            <div class="row g-2 mb-3">
+              <div class="col-6">
+                <label class="form-label small fw-bold">أجرة التوصيل (ج.م)</label>
+                <input type="number" id="deliveryFee" class="form-control" value="20" required>
+              </div>
+              <div class="col-6">
+                <label class="form-label small fw-bold">ثمن البضاعة (لو فيه)</label>
+                <input type="number" id="itemCost" class="form-control" value="0">
+              </div>
+            </div>
+            <button type="submit" class="btn btn-primary-alt w-100 py-2 fw-bold">
+              <i class="fa-solid fa-paper-plane me-1"></i> بث الطلب فوراً للطيارين
+            </button>
+          </form>
+        </div>
+      </div>
+
+      <!-- قائمة الطلبات والمناديب النشطين -->
+      <div class="col-lg-8">
+        <div class="card p-4">
+          <div class="d-flex justify-content-between align-items-center mb-3">
+            <h5 class="fw-bold mb-0"><i class="fa-solid fa-list-check me-2 text-primary"></i> متابعة حركة الطلبات المباشرة</h5>
+            <button class="btn btn-sm btn-outline-secondary" onclick="loadDashboardData()"><i class="fa-solid fa-rotate"></i> تحديث</button>
+          </div>
+          <div class="table-responsive">
+            <table class="table table-hover align-middle">
+              <thead class="table-light">
+                <tr>
+                  <th>رقم الطلب</th>
+                  <th>العميل</th>
+                  <th>العنوان</th>
+                  <th>الأجرة</th>
+                  <th>الحالة</th>
+                  <th>الكابتن المسؤول</th>
+                </tr>
+              </thead>
+              <tbody id="ordersTableBody">
+                <tr>
+                  <td colspan="6" class="text-center text-muted py-4">جاري تحميل البيانات الحية من السيرفر...</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- كشف حساب ومحفظة المناديب في الدكان -->
+        <div class="card p-4">
+          <div class="d-flex justify-content-between align-items-center mb-3">
+            <h5 class="fw-bold mb-0"><i class="fa-solid fa-wallet text-success me-2"></i> مناديب الدكان وتسوية العمولات</h5>
+          </div>
+          <div class="table-responsive">
+            <table class="table table-hover align-middle">
+              <thead class="table-light">
+                <tr>
+                  <th>الكابتن</th>
+                  <th>رقم الهاتف</th>
+                  <th>الحالة</th>
+                  <th>رصيد المحفظة / الدين</th>
+                  <th>إجراء تسوية في الدكان</th>
+                </tr>
+              </thead>
+              <tbody id="driversTableBody">
+                <tr>
+                  <td colspan="5" class="text-center text-muted py-3">جاري التحميل...</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script>
+    const socket = io();
+
+    socket.on('connect', () => {
+      console.log('Connected to real-time server');
+    });
+
+    socket.on('status_changed', () => {
+      loadDashboardData();
+    });
+
+    socket.on('new_order_available', () => {
+      loadDashboardData();
+    });
+
+    async function loadDashboardData() {
+      try {
+        const res = await fetch('/api/orders/available');
+        // في حالة وجود توكن أدمن سيتم التحميل المباشر
+      } catch (err) {
+        console.log('Offline or awaiting token');
+      }
+    }
+
+    document.getElementById('newOrderForm').addEventListener('submit', (e) => {
+      e.preventDefault();
+
+      const newOrder = {
+        id: 'ORD-' + Math.floor(1000 + Math.random() * 9000),
+        customerName: document.getElementById('custName').value,
+        customerPhone: document.getElementById('custPhone').value,
+        pickupLocation: { address: document.getElementById('pickupAddr').value || 'مقر الدكان' },
+        dropoffLocation: { address: document.getElementById('dropoffAddr').value, landmark: 'علامة مميزة' },
+        itemsDescription: document.getElementById('orderDesc').value,
+        deliveryFee: parseFloat(document.getElementById('deliveryFee').value) || 20,
+        estimatedCost: parseFloat(document.getElementById('itemCost').value) || 0,
+      };
+
+      // بث الطلب عبر السوكيت فوراً
+      socket.emit('broadcast_new_order', newOrder);
+
+      // إضافة الطلب في جدول المتابعة بالدكان
+      const tbody = document.getElementById('ordersTableBody');
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td><strong>#${newOrder.id}</strong></td>
+        <td>${newOrder.customerName}<br><small class="text-muted">${newOrder.customerPhone}</small></td>
+        <td>${newOrder.dropoffLocation.address}</td>
+        <td><strong class="text-success">${newOrder.deliveryFee} ج.م</strong></td>
+        <td><span class="badge bg-warning text-dark badge-status">جاري البحث عن كابتن</span></td>
+        <td><span class="text-muted">بانتظار قبول طيار...</span></td>
+      `;
+      tbody.prepend(tr);
+
+      alert('🚀 تم بث الطلب فوراً لكل طياري العجل في المنطقة!');
+      e.target.reset();
+    });
+  </script>
+</body>
+</html>

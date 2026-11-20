@@ -60,7 +60,7 @@ class DriverDashboardPage extends StatelessWidget {
                         value: state.isOnline,
                         activeThumbColor: AppColors.success,
                         onChanged: (_) {
-                          context.read<DriverCubit>().toggleOnlineStatus('DRV-1');
+                          context.read<DriverCubit>().toggleOnlineStatus();
                         },
                       ),
                     ],

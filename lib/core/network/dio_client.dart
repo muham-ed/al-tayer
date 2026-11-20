@@ -1,14 +1,19 @@
 import 'package:dio/dio.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import '../config/environment_config.dart';
+import '../services/secure_storage_service.dart';
 
 class DioClient {
   final Dio dio;
+  final SecureStorageService _secureStorage;
 
-  DioClient({String baseUrl = 'http://10.0.2.2:3000/api'})
-      : dio = Dio(BaseOptions(
-          baseUrl: baseUrl,
-          connectTimeout: const Duration(seconds: 30),
-          receiveTimeout: const Duration(seconds: 30),
+  DioClient({
+    String? baseUrl,
+    SecureStorageService? secureStorage,
+  })  : _secureStorage = secureStorage ?? SecureStorageService(),
+        dio = Dio(BaseOptions(
+          baseUrl: baseUrl ?? '${EnvironmentConfig.apiBaseUrl}/api',
+          connectTimeout: const Duration(seconds: 15),
+          receiveTimeout: const Duration(seconds: 15),
           headers: {
             'Content-Type': 'application/json',
             'Accept': 'application/json',
@@ -16,8 +21,7 @@ class DioClient {
         )) {
     dio.interceptors.add(InterceptorsWrapper(
       onRequest: (options, handler) async {
-        final prefs = await SharedPreferences.getInstance();
-        final token = prefs.getString('token');
+        final token = await _secureStorage.getToken();
         if (token != null && token.isNotEmpty) {
           options.headers['Authorization'] = 'Bearer $token';
         }

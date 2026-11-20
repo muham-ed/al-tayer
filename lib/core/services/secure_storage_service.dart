@@ -12,6 +12,7 @@ class SecureStorageService {
   static const String _keyUserId = 'user_id';
   static const String _keyUserName = 'user_name';
   static const String _keyUserRole = 'user_role';
+  static const String _keyUserPhone = 'user_phone';
 
   Future<void> saveToken(String token) async {
     await _storage.write(key: _keyToken, value: token);
@@ -25,20 +26,26 @@ class SecureStorageService {
     required String userId,
     required String userName,
     required String role,
+    String? phone,
   }) async {
     await _storage.write(key: _keyUserId, value: userId);
     await _storage.write(key: _keyUserName, value: userName);
     await _storage.write(key: _keyUserRole, value: role);
+    if (phone != null) {
+      await _storage.write(key: _keyUserPhone, value: phone);
+    }
   }
 
   Future<Map<String, String?>> getUserData() async {
     final userId = await _storage.read(key: _keyUserId);
     final userName = await _storage.read(key: _keyUserName);
     final role = await _storage.read(key: _keyUserRole);
+    final phone = await _storage.read(key: _keyUserPhone);
     return {
       'userId': userId,
       'userName': userName,
       'role': role,
+      'phone': phone,
     };
   }
 

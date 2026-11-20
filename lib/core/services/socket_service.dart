@@ -1,22 +1,26 @@
 import 'package:flutter/foundation.dart';
 import 'package:socket_io_client/socket_io_client.dart' as IO;
-import 'package:shared_preferences/shared_preferences.dart';
+import '../config/environment_config.dart';
+import 'secure_storage_service.dart';
 
 class SocketService {
+  final SecureStorageService _secureStorage;
   IO.Socket? _socket;
   bool isConnected = false;
 
-  Future<void> init({String? customBaseUrl}) async {
-    final String socketUrl = customBaseUrl ?? 'http://10.0.2.2:3000';
+  SocketService({SecureStorageService? secureStorage})
+      : _secureStorage = secureStorage ?? SecureStorageService();
 
-    final prefs = await SharedPreferences.getInstance();
-    final token = prefs.getString('token');
+  Future<void> init({String? customBaseUrl}) async {
+    final String socketUrl = customBaseUrl ?? EnvironmentConfig.socketUrl;
+    final token = await _secureStorage.getToken();
 
     _socket = IO.io(
       socketUrl,
       IO.OptionBuilder()
         .setTransports(['websocket', 'polling'])
         .setExtraHeaders({'Authorization': 'Bearer $token'})
+        .setAuth({'token': token})
         .enableAutoConnect()
         .enableReconnection()
         .setReconnectionAttempts(10)

@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>ع الطاير - لوحة الكابتن</title>
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#ff5722">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.rtl.min.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background-color: #f1f5f9; padding-bottom: 30px; user-select: none; }
+    .header-bar { background: linear-gradient(135deg, #ff5722, #e64a19); color: white; padding: 18px; border-radius: 0 0 20px 20px; box-shadow: 0 4px 15px rgba(230,74,25,0.3); }
+    .order-card { background: white; border-radius: 16px; border: 2px solid #e2e8f0; padding: 18px; margin-bottom: 16px; box-shadow: 0 4px 12px rgba(0,0,0,0.03); transition: transform 0.2s; }
+    .order-card.new-pulse { border-color: #ff5722; animation: pulse 1.5s infinite; }
+    @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(255,87,34, 0.4); } 70% { box-shadow: 0 0 0 12px rgba(255,87,34, 0); } 100% { box-shadow: 0 0 0 0 rgba(255,87,34, 0); } }
+    .btn-action { background-color: #ff5722; color: white; border-radius: 12px; font-weight: bold; padding: 12px; width: 100%; border: none; font-size: 1.05rem; }
+    .btn-action:hover { background-color: #e64a19; color: white; }
+    .btn-whatsapp { background-color: #25d366; color: white; border-radius: 10px; font-weight: bold; border: none; }
+    .btn-call { background-color: #3b82f6; color: white; border-radius: 10px; font-weight: bold; border: none; }
+    .earnings-box { background: rgba(255,255,255,0.2); border-radius: 12px; padding: 10px; text-align: center; }
+  </style>
+</head>
+<body>
+
+  <!-- شريط الكابتن العلوي -->
+  <div class="header-bar">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+      <div>
+        <h5 class="fw-bold mb-0" id="driverTitle">كابتن ع الطاير 🚴</h5>
+        <small class="opacity-75">مقر الدكان - البيطاش</small>
+      </div>
+      <div class="form-check form-switch fs-4 mb-0">
+        <input class="form-check-input" type="checkbox" id="onlineSwitch" checked onchange="toggleOnline()">
+      </div>
+    </div>
+    <div class="row g-2">
+      <div class="col-6">
+        <div class="earnings-box">
+          <small class="d-block opacity-75">أرباح اليوم</small>
+          <span class="fs-5 fw-bold" id="todayEarnings">0 ج.م</span>
+        </div>
+      </div>
+      <div class="col-6">
+        <div class="earnings-box">
+          <small class="d-block opacity-75">مشاوير منجزة</small>
+          <span class="fs-5 fw-bold" id="tripsCount">0</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="container px-3 mt-3">
+
+    <!-- زر إضافة للشاشة الرئيسية PWA -->
+    <div id="installBanner" class="alert alert-warning d-flex justify-content-between align-items-center d-none" role="alert">
+      <div>
+        <strong>نزّل التطبيق فوراً!</strong>
+        <div class="small">اضغط لتثبيت التطبيق على شاشة موبايلك</div>
+      </div>
+      <button class="btn btn-sm btn-dark fw-bold" id="installBtn">تثبيت 📲</button>
+    </div>
+
+    <!-- المشوار النشط حالياً (لو فيه مشوار قيد التنفيذ) -->
+    <div id="activeTripSection" class="d-none">
+      <div class="order-card border-primary">
+        <div class="d-flex justify-content-between align-items-center mb-2">
+          <span class="badge bg-primary px-3 py-2 fs-6">مشوارك الحالي</span>
+          <span class="text-success fw-bold fs-5" id="activeFee">0 ج.م</span>
+        </div>
+        <hr class="my-2">
+        <h6 class="fw-bold text-dark mt-2" id="activeDesc">تفاصيل المشوار...</h6>
+
+        <div class="p-2 bg-light rounded mt-3">
+          <div class="small text-muted">مكان الاستلام:</div>
+          <div class="fw-bold" id="activePickup">-</div>
+          <div class="small text-muted mt-2">عنوان التسليم:</div>
+          <div class="fw-bold text-danger" id="activeDropoff">-</div>
+        </div>
+
+        <div class="row g-2 mt-3">
+          <div class="col-6">
+            <a id="callBtn" href="#" class="btn btn-call w-100 py-2"><i class="fa-solid fa-phone me-1"></i> اتصال</a>
+          </div>
+          <div class="col-6">
+            <a id="waBtn" href="#" target="_blank" class="btn btn-whatsapp w-100 py-2"><i class="fa-brands fa-whatsapp me-1"></i> واتساب</a>
+          </div>
+        </div>
+
+        <button class="btn btn-success w-100 py-3 mt-3 fw-bold fs-5" onclick="completeActiveTrip()">
+          <i class="fa-solid fa-check-circle me-1"></i> تم التسليم وتحصيل الكاش
+        </button>
+      </div>
+    </div>
+
+    <!-- قائمة الطلبات المتاحة للقبول -->
+    <h6 class="fw-bold text-muted mb-3 mt-4"><i class="fa-solid fa-bell me-1 text-danger"></i> المشاوير المتاحة في المنطقة</h6>
+    <div id="availableOrdersList">
+      <div class="text-center py-5 text-muted" id="noOrdersMsg">
+        <i class="fa-solid fa-bicycle fa-3x mb-3 text-secondary opacity-50"></i>
+        <p>لا توجد مشاوير جديدة حالياً..<br>خليك متصل ومنتظر رنين الأوردر!</p>
+      </div>
+    </div>
+
+  </div>
+
+  <audio id="orderAlertSound" src="https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3" preload="auto"></audio>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script>
+    const socket = io();
+    let isOnline = true;
+    let activeOrder = null;
+    let earnings = 0;
+    let trips = 0;
+
+    socket.on('connect', () => {
+      console.log('Rider connected');
+      socket.emit('driver_online', { driverId: 'RIDER-' + Math.floor(Math.random()*1000) });
+    });
+
+    socket.on('new_order_available', (order) => {
+      if (!isOnline || activeOrder) return;
+      playAlert();
+      showNewOrder(order);
+    });
+
+    function playAlert() {
+      const audio = document.getElementById('orderAlertSound');
+      if (audio) audio.play().catch(()=>{});
+      if (navigator.vibrate) navigator.vibrate([300, 100, 300]);
+    }
+
+    function showNewOrder(order) {
+      document.getElementById('noOrdersMsg').classList.add('d-none');
+      const list = document.getElementById('availableOrdersList');
+
+      const card = document.createElement('div');
+      card.className = 'order-card new-pulse';
+      card.id = `order-${order.id}`;
+      card.innerHTML = `
+        <div class="d-flex justify-content-between align-items-center mb-2">
+          <span class="badge bg-danger">مشوار جديد ع الطاير</span>
+          <span class="text-success fw-bold fs-5">${order.deliveryFee || 20} ج.م</span>
+        </div>
+        <div class="fw-bold fs-6 mb-2">${order.itemsDescription}</div>
+        <div class="small text-muted"><i class="fa-solid fa-location-dot text-danger"></i> ${order.dropoffLocation.address || 'العجمي - البيطاش'}</div>
+        <div class="small text-muted"><i class="fa-solid fa-flag text-primary"></i> علامة: ${order.dropoffLocation.landmark || 'بدون علامة'}</div>
+        <button class="btn btn-action mt-3" onclick="acceptTrip('${order.id}', '${order.itemsDescription}', '${order.pickupLocation?.address || 'الدكان'}', '${order.dropoffLocation.address}', ${order.deliveryFee || 20}, '${order.customerPhone}')">
+          <i class="fa-solid fa-check me-1"></i> قبول المشوار والتحرك فوراً
+        </button>
+      `;
+      list.prepend(card);
+    }
+
+    function acceptTrip(id, desc, pickup, dropoff, fee, phone) {
+      activeOrder = { id, desc, pickup, dropoff, fee, phone };
+      document.getElementById(`order-${id}`)?.remove();
+      document.getElementById('activeTripSection').classList.remove('d-none');
+      document.getElementById('activeDesc').innerText = desc;
+      document.getElementById('activePickup').innerText = pickup;
+      document.getElementById('activeDropoff').innerText = dropoff;
+      document.getElementById('activeFee').innerText = fee + ' ج.م';
+      document.getElementById('callBtn').href = 'tel:' + phone;
+      document.getElementById('waBtn').href = 'https://wa.me/2' + phone;
+
+      socket.emit('join_order', id);
+    }
+
+    function completeActiveTrip() {
+      if (!activeOrder) return;
+      earnings += activeOrder.fee;
+      trips += 1;
+      document.getElementById('todayEarnings').innerText = earnings + ' ج.م';
+      document.getElementById('tripsCount').innerText = trips;
+
+      document.getElementById('activeTripSection').classList.add('d-none');
+      activeOrder = null;
+      alert('عاش يا كابتن! تم تحصيل الكاش وإتمام المشوار.');
+    }
+
+    function toggleOnline() {
+      isOnline = document.getElementById('onlineSwitch').checked;
+      document.getElementById('driverTitle').innerText = isOnline ? 'كابتن ع الطاير (متصل) 🟢' : 'أنت غير متصل 🔴';
+    }
+
+    // PWA Install prompt
+    let deferredPrompt;
+    window.addEventListener('beforeinstallprompt', (e) => {
+      e.preventDefault();
+      deferredPrompt = e;
+      document.getElementById('installBanner').classList.remove('d-none');
+    });
+
+    document.getElementById('installBtn')?.addEventListener('click', () => {
+      if (deferredPrompt) {
+        deferredPrompt.prompt();
+        deferredPrompt.userChoice.then(() => {
+          document.getElementById('installBanner').classList.add('d-none');
+        });
+      }
+    });
+  </script>
+</body>
+</html>
